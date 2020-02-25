@@ -59,6 +59,7 @@ class Encoder:
         self.letter_path = letter_path
         self.letters_dict = {}
         self.letters = []
+        self.letters.append('_')
 
     def mute(self):
         """ Turn on silent mode """
@@ -158,6 +159,7 @@ class Encoder:
         with open(self.letter_path,'r') as f:
             for line in f.readlines():
                 self.letters.append(line.split('##')[0])
+        #self.letters.append('_')
         # print(self.letters)
         wrong = {}
         for k,v in enumerate(self.word_vocab):
@@ -165,6 +167,12 @@ class Encoder:
                 if letter not in self.letters:
                     wrong[v] = 1
                     continue
+            if len(v)>=3:
+                for i in range(len(v)-2):
+                    if v[i] ==v[i+1] and v[i]==v[i+2]:
+                        print(v)
+                        wrong[v] = 1
+                        continue
         # print(wrong)
         for k,v in enumerate(wrong):
             self.word_vocab.pop(v,-1)
@@ -181,11 +189,18 @@ class Encoder:
                     # wrong[v] = 1
                     remain_wrong.append(v)
                     continue
+            if len(v)>=3:
+                for i in range(len(v)-2):
+                    if v[i] ==v[i+1] and v[i]==v[i+2]:
+                        print(v)
+                        remain_wrong.append(v)
+                        continue
  
         # print(remain_wrong)
         for word in remain_wrong:
             remainning_words_dict.pop(word,-1)
         remaining_words = [v for k,v in enumerate(remainning_words_dict)]
+     
         # print(self.word_vocab)
         # print(remaining_words)
         self.bpe_vocab = self.learn_bpe_vocab(remaining_words)
@@ -233,13 +248,15 @@ class Encoder:
         else:
             word_tokens = self.word_tokenizer(sentence.strip())
         tokens = []
-        numbers = ['0','1','2','3','4','5','6','7','8','9','+','-',
-        '»','′','︿','⊙','—','﹏','←','☽','☾','≻','″','','√','|','°','⌣','¿','=',';','‘',
-        '(',')','&','%','*','#','@','!','$','^',',','.','>','<','~']
+        # numbers = ['0','1','2','3','4','5','6','7','8','9','+','-',
+        # '»','′','︿','⊙','—','﹏','←','☽','☾','≻','″','','√','|','°','⌣','¿','=',';','‘',
+        # '(',')','&','%','*','#','@','!','$','^',',','.','>','<','~']
+
         for word_token in word_tokens:
             unk = False
             for letter in word_token:
-                if letter  in numbers:
+                # if letter  in numbers:
+                if letter not in self.letters:
                     unk=True
                     break
             if word_token in self.word_vocab:
@@ -266,16 +283,8 @@ class Encoder:
             lenth = 0 
             if subtoken == '__sow':
                 continue
-                # sentence_list.append('1')
-                # sentence_list.append(' ')
-                # sentence_list.append('2')
-                # lenth+=2
             elif subtoken == '__eow':
                 continue
-                # sentence_list.append('1')
-                # sentence_list.append(' ')
-                # sentence_list.append('3')
-                # lenth+=2
             elif subtoken == '__unk':
                 sentence_list.append('1')
                 sentence_list.append(' ')
@@ -301,20 +310,7 @@ class Encoder:
             sentence_list = sentence_list[0:-1]
         sepcount = 0
         letters_line = '1 0#'
-        # new_sentence_list = []
-        # for i,ids in enumerate(sentence_list):
-        #     if ids=='2':
-        #         new_sentence_list.append(sentence_list[i-4])
-        #     elif ids=='3':
-        #         new_sentence_list.append(sentence_list[i-4])
-        #         # pastlen = len_list[sepcount]
-        #         # temp = sentence_list[i-pastlen-2:i-3]
-        #         # for k in temp:                 
-        #         #     new_sentence_list.append(k)
-        #     else:
-        #         new_sentence_list.append(ids)
-        #         # if ids=='#':
-        #         #     sepcount+=1
+
         for idx in sentence_list:
             letters_line+=idx
         return letters_line + '\n'
@@ -401,12 +397,12 @@ class Encoder:
         """ Turns vocab into dict that is json-serializeable """
         print('before kick!')
         print(len(self.word_vocab))
-        incorrect = []
-        for k,v in self.word_vocab.items():
-            if self.bpe_vocab.get(k) is not None:
-                incorrect.append(k)
-        for k in incorrect:
-            self.word_vocab.pop(k)
+        # incorrect = []
+        # for k,v in self.word_vocab.items():
+        #     if self.bpe_vocab.get(k) is not None:
+        #         incorrect.append(k)
+        # for k in incorrect:
+        #     self.word_vocab.pop(k)
         i = 0
         for k,v in self.word_vocab.items():
             self.word_vocab[k] = i
@@ -444,10 +440,13 @@ class Encoder:
         with open(outpath, 'w') as outfile:
             print(len(self.word_vocab))
             print(len(self.bpe_vocab))
-            self.word_vocab.update(self.bpe_vocab)
-            print(len(self.word_vocab))
-            for k,v in enumerate(self.word_vocab):
-                line = str(v)+'##'+str(k)+'\n'
+            #self.word_vocab.update(self.bpe_vocab)
+            # print(len(self.word_vocab))
+            for k,v in self.word_vocab.items():
+                line = k+'##'+str(v)+'\n'
+                outfile.write(line)
+            for k,v in self.bpe_vocab.items():
+                line = k+'##'+str(v)+'\n'
                 outfile.write(line)
 
     def save(self, outpath, dont_warn=False):
