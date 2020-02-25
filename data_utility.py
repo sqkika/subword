@@ -10,7 +10,7 @@ from collections import defaultdict
 class DataUtility:
     def __init__(self, vocab_file_in_words=None, vocab_file_in_letters=None, vocab_file_out=None,full_vocab_file_in_words=None):
 
-        self.start_str = "__start"
+        self.start_str = "<start>"
         self.eos_str = "__pad"
         self.unk_str = "__unk"
         self.num_str = "<num>"
